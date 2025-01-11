@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .main-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            justify-content: center;
+            width: 100%;
+            max-width: 1200px;
+        }
+        #chatbox {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 9px;
+            width: 100%;
+            max-width: 600px;
+            height: 70vh;
+            overflow-y: auto;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .message {
+            position:relative;
+            margin: 10px 0;
+            padding: 20px;
+            border-radius: 7px;
+            word-wrap: break-word;
+            display: inline-block;
+        }
+        .user {
+            background-color: #d1e7dd;
+            align-self: flex-end;
+            margin-left: auto;
+            text-align: right; 
+        }
+        .assistant {
+            background-color: #f8d7da;
+            align-self: flex-start;
+            margin-right: auto;
+            text-align: left; 
+        }
+        .date {
+        position: absolute;
+        font-size: 0.8em;
+        color: gray;
+        }
+        .user .date {
+        bottom: 2px;
+        right: 10px;
+        text-align: right;
+        }
+        .assistant .date {
+        bottom: 2px;
+        left: 10px;
+        text-align: left;
+        }
+        .settings-box {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 300px;
+            padding: 10px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .settings-box label {
+            font-size: 14px;
+        }
+        .settings-box input[type="range"] {
+            width: 100%;
+        }
+        #inputContainer {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            margin-top: 10px;
+        }
+        #data-input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px 0 0 5px;
+            outline: none;
+        }
+        #sendButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+        }
+        #sendButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <!-- Chatbox -->
+        <div id="chatbox"></div>
+    
+        <!-- Settings Box -->
+        <div class="settings-box">
+            <label for="modelMode">Model</label>
+            <select id="modelMode">
+                <option value="gpt-4o-mini">GPT-4o-Mini</option>
+                <option value="gpt-3.5-turbo">GPT-3.5-Turbo</option>
+            </select>
+
+            <label for="temperature">Temperature</label>
+            <input type="range" id="temperature" min="0" max="1" step="0.01" value="0.7" />
+            <span id="tempValue">0.7</span>
+    
+            <label for="maxTokens">Max Tokens (1-4096)</label>
+            <input type="number" id="maxTokens" min="1" max="4096" value="1000" />
+
+            <label for="topP">Top_p</label>
+            <input type="range" id="topP" min="0" max="1" step="0.01" value="1" />
+            <span id="topPValue">1</span>
+        </div>
+    </div>
+
+    <!-- <div><span id="time-container"></span></div>  -->
+    <div id="inputContainer">
+        <input type="text" id="data-input" placeholder="Type your message here..." />
+        <button id="sendButton">Send</button>
+    </div>
+
+    <!-- <div>This is simple test to get data from a backend</div>
+    <div><span>Last update: </span><span id="time-container"></span></div> 
+    <div>
+        <label for="data-input">Data to send:</label>   
+        <input type="text" id="data-input">     
+        <button onclick="getModelReply()">Send data</button>
+    </div>
+    <div>
+        <div id="sent-data-container"></div>
+    </div>
+    <hr>
+    <button onclick="getUsers()">Get user data</button>
+    <div id="result-container"></div> -->
+
+
+</body>
+<script>
+    document.getElementById('temperature').addEventListener('input', function () {
+        document.getElementById('tempValue').textContent = this.value;
+    });
+    document.getElementById('topP').addEventListener('input', function () {
+    document.getElementById('topPValue').textContent = this.value;
+    });
+    document.getElementById('maxTokens').addEventListener('input', function () {
+    let maxtokensmsg = parseInt(this.value, 10);
+    if (maxtokensmsg < 1) {
+        this.value = 1;
+    }
+    else if (maxtokensmsg > 4096) {
+        this.value = 4096;
+    }
+    });
+
+    const chatbox = document.getElementById('chatbox');
+    const userInput = document.getElementById('data-input');
+    const sendButton = document.getElementById('sendButton');
+    const temperature = document.getElementById('temperature');
+    const modelmode = document.getElementById('modelMode');
+
+    function addmsgtoscreen(text, sender, messageid=null) {
+        const messagediv = document.createElement('div');
+        messagediv.classList.add('message', sender);
+        if (messageid) {
+            messagediv.id = messageid;
+        }
+        const messagetext = document.createElement('div');
+        messagetext.innerHTML = text.replace(/\n/g,'<br>');
+
+        const datespan = document.createElement('span');
+        datespan.classList.add('date');
+        datespan.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        console.log(datespan.textContent)
+
+        messagediv.appendChild(messagetext);
+        messagediv.appendChild(datespan);
+
+        chatbox.appendChild(messagediv);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    // var xhr = null;
+    // getXmlHttpRequestObject = function () {
+    //     if (!xhr) {
+    //         // Create a new XMLHttpRequest object 
+    //         xhr = new XMLHttpRequest();
+    //     }
+    //     return xhr;
+    // };
+
+    // function dataCallback() {
+    //     // Check response is ready or not
+    //     if (xhr.readyState == 4 && xhr.status == 200) {
+    //         console.log("User data received!");
+    //         getDate();
+    //         dataDiv = document.getElementById('result-container');
+    //         // Set current data text
+    //         dataDiv.innerHTML = xhr.responseText;
+    //     }
+    // }
+
+    // function getUsers() {
+    //     console.log("Get users...");
+    //     xhr = getXmlHttpRequestObject();
+    //     xhr.onreadystatechange = dataCallback;
+    //     // asynchronous requests
+    //     xhr.open("GET", "http://localhost:7000/chat", true);
+    //     // Send the request over the network
+    //     xhr.send(null);
+    // }
+
+    // function getDate() {
+    //     date = new Date().toString();
+    //     document.getElementById('time-container').textContent
+    //         = date;
+    // }
+
+    // function sendDataCallback() {
+    //     // Check response is ready or not
+    //     if (xhr.readyState == 4 && xhr.status == 201) {
+    //         console.log("Data creation response received!");
+    //         getDate();
+    //         dataDiv = document.getElementById('sent-data-container');
+    //         // Set current data text
+    //         dataDiv.innerHTML = xhr.responseText;
+    //     }
+    // }
+
+    // function sendData(){
+    //     dataToSend = document.getElementById('data-input').value;
+    //     if (!dataToSend) {  // If there's no data to send
+    //         console.log("Data is empty.");
+    //         return;
+    //     }
+    //     console.log("Sending data:" + dataToSend);
+    //     xhr = getXmlHttpRequestObject();        // NOTE SOS: "PARENTHESES" () RUNS THE FUNCTION. "NO PARENTHESES" DEFINES AN ELEMENT AS THE FUNCTION (see here and below)
+    //     xhr.onreadystatechange = sendDataCallback;
+    //     // async requests
+    //     xhr.open("POST", "http://localhost:7000/chat", true);
+    //     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    //     xhr.send(JSON.stringify({"data": dataToSend}));
+
+    // }
+
+    async function getModelReply() {
+        const usermessage = userInput.value.trim();
+        const temperaturemsg = parseFloat(temperature.value);
+        const modelmodemsg = modelmode.value;
+        const toppmsg = parseFloat(document.getElementById('topP').value);
+        let maxtokensmsg = parseInt(document.getElementById('maxTokens').value, 10);
+        if (maxtokensmsg < 1) maxtokensmsg = 1; // Clamp to 1 if it's too low
+        if (maxtokensmsg > 4096) maxtokensmsg = 4096; // Clamp to 4096 if it's too high
+
+        if (!usermessage) return;
+
+        addmsgtoscreen(usermessage, 'user');
+        userInput.value = '';
+
+        const loadingmessageid = `loading-${Date.now()}`;
+        addmsgtoscreen('<i style="color: grey;">(thinking...)</i>', 'assistant', loadingmessageid);
+
+        console.log("Sending data:" + usermessage);
+        const url = 'http://localhost:7000/chat';
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json;charset=UTF-8",
+                },
+                body: JSON.stringify({"data": usermessage, "temp":temperaturemsg, "modelpick":modelmodemsg, "maxtokens":maxtokensmsg,"top_p":toppmsg}),
+
+            });
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            } else {
+                const json = await response.json();
+                console.log(json)
+                const loadingMessage = document.getElementById(loadingmessageid);
+                if (loadingMessage) {
+                    loadingMessage.querySelector('div').innerHTML = json["message"].replace(/\n/g, '<br>');
+                }
+
+            }
+        } catch(error) {
+            console.error(error)
+            const loadingMessage = document.getElementById(loadingmessageid);
+                if (loadingMessage) {
+                    loadingMessage.querySelector('div').innerHTML = 'An error occurred. Please try again.';
+                }
+        }
+    }
+
+    // This is an IIFE, and it immediately executes the getDate() function so that the datetime is displayed in the page as soon
+    // as the script loads. The time is displayed at the correct spot thanks to the definition of the function (see above).
+    // (function () {
+    //     getDate();
+    // })();
+
+    sendButton.addEventListener('click', getModelReply);
+
+    // Event listener for Enter key
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') getModelReply();
+    });
+
+</script>
+</html>
