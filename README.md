@@ -2,7 +2,7 @@
 
 ## How to setup the necessary dependencies
 
-1. Open the .env file and place in it your API key for OpenAI
+1. Open the .env file in the backend and place in it your API key for OpenAI
 2. Create a conda envirnoment running python 3.11
 3. Activate the environment and run `pip install -r requirements.txt` to install the required dependencies 
 2. Make sure `npm` is installed on your system and that you are able to run the `npx` command in your commandline
