@@ -22,8 +22,8 @@ def read_pdf(pdf_path):
         last_page_index = -1
         for page in pages:
             # I'm guessing these two prints are here for debugging purposes
-            print(f"Page {page.metadata['page']}: {page.page_content[:100]}...")    # 'metadata' holds info on the page, 'page_content[:100]' prints the first 100 items in the string contained in page_content
-            print('real_pages:', len(real_pages))
+            # print(f"Page {page.metadata['page']}: {page.page_content[:100]}...")    # 'metadata' holds info on the page, 'page_content[:100]' prints the first 100 items in the string contained in page_content
+            # print('real_pages:', len(real_pages))
             page_index = page.metadata['page']
             if page_index == last_page_index:
                 real_pages[-1].page_content += page.page_content    # not entirely sure, I think this checks for sequential pages indexed under the same number and if this is the case appends all of their info to the same element(page) instead of adding a new one
@@ -60,19 +60,19 @@ def ocr_scanned_pdf(pdf_path):
     return text
 
 
-if __name__ == '__main__':
-    # add current repo to path
+# if __name__ == '__main__':
+#     # add current repo to path
 
-    pdf_path = '''./data/LEX_001.pdf'''
-    pages = read_pdf(pdf_path)
+#     pdf_path = '''./data/LEX_001.pdf'''
+#     pages = read_pdf(pdf_path)
 
-    #concatenate all pages
-    text = ''
-    for page in pages:
-        text += page.page_content + '\n'
+#     #concatenate all pages
+#     text = ''
+#     for page in pages:
+#         text += page.page_content + '\n'
 
-    #save to file
-    with open('./data/LEX_001.txt', 'w') as f:
-        f.write(text)
+#     #save to file
+#     with open('./data/LEX_001.txt', 'w') as f:
+#         f.write(text)
 
-    print(pages)
+#     print(pages)

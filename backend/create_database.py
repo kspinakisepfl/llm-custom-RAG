@@ -98,27 +98,30 @@ def chunk_document(pages: List[Document], source: str) -> List[Tuple[str, str, i
         #       we wouldn't want to throw the leftover string away.
         #       Instead we treat it as if it's part of the next page.
         ########################################################################
-        curr_chunk = previous_last_chunk + page_content
+        content_to_chunk = previous_last_chunk + page_content
         
         ########################################################################
         # TODO: chunk this concatenated string
         # Hint: use text_splitter.split_text() method
         ########################################################################
-        curr_chunk = text_splitter.split_text(curr_chunk) 
-        if curr_chunk:
-            previous_last_chunk = curr_chunk.pop(-1)
-        if curr_chunk:
-            prev_page_chunk = curr_chunk.pop(0)
-
+        cut_up_chunks = text_splitter.split_text(content_to_chunk) 
+        # print(cut_up_chunks)
         
         ########################################################################
         # TODO: add all the chunks but the last one to the result
         ########################################################################
-        result.append((prev_page_chunk,source,chunk_start_page))
-        chunk_start_page = page_number + 1
+        if cut_up_chunks:   # check if we have any chunks from current page
+            lastchunk = cut_up_chunks.pop(-1)
 
-        curr_chunk = [(chunk,source,chunk_start_page) for chunk in curr_chunk]
-        result+=(curr_chunk)
+            if cut_up_chunks:   # check if any other chunks are left or if we only had the one (we are unsure if the last chunk is of size 500 so we keep it for next round of chunking )
+                to_add_to_result = [(chunk,source,chunk_start_page) for chunk in cut_up_chunks]     # if we do have other chunks, add to result as those are definitely of size 500
+                result+=(to_add_to_result)
+            
+            previous_last_chunk = lastchunk
+        else:
+            previous_last_chunk = ""
+                          
+        chunk_start_page = page_number + 1
 
 
 
@@ -282,6 +285,7 @@ def process_pdf(file_path, db_path, local=True):
     ############################################################################
     # TODO: get document chunks with the chunk_document functions
     ############################################################################
+    print(source)
     chunks = chunk_document(pages, source)
     
     ############################################################################
@@ -294,12 +298,8 @@ def process_pdf(file_path, db_path, local=True):
 if __name__ == "__main__":
     LOCAL = os.getenv("LOCAL", "True").lower() == "true"
 
-    QUICK_DEMO = os.getenv("QUICK_DEMO", "False").lower() == "true"
-
     if LOCAL:
         db_path = "rag_database.sqlite"
-    else:
-        db_path = "rag_database_with_openai_embedding.sqlite"
 
     # Initialize the database and FAISS index
     create_sqlite_tables(db_path)
@@ -308,13 +308,9 @@ if __name__ == "__main__":
     data_folder = './data'
     all_files = os.listdir(data_folder)
 
-    if QUICK_DEMO:
-        all_files = all_files[:2]
-
+    print("Now reading, chunking, embedding, saving:")
     for file in all_files:
         file_path = os.path.join(data_folder, file)
         # check if file is a pdf
         if file_path.endswith('.pdf'):
             process_pdf(file_path, db_path,LOCAL)
-
-

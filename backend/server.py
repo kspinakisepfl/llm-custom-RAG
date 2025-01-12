@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import flask
 import json
-from assistant import parametrization, replace_with_sources, get_db_loc, process_pdf, create_sqlite_tables
+from assistant import parametrization, replace_with_sources, get_db_loc
 from langchain.memory import ConversationBufferMemory
 from flask_cors import CORS
 import os
